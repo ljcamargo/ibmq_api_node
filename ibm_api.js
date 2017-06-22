@@ -1,16 +1,24 @@
 
-var ibmq_api = {
+var IBMQ_API = {
   request: require('request'),
   promise: require('promise'),
   url: 'https://quantumexperience.ng.bluemix.net/api',
-  user: null, token: null, auth: null,
+  apiToken: null, user: null, token: null, auth: null,
+  defaults:  {
+    'shots': 1,
+    'seed': 1,
+    'device': 'simulator',
+    'lang': 'QASM2',
+    'name': 'Experiment'
+  },
 
   log: function(api_token) {
+    this.apiToken = api_token;
     return new this.promise((resolve, reject) => {
       this.getToken(api_token).then(val => {
-        ibmq_api.user = val.userId;
-        ibmq_api.token = val.id;
-        ibmq_api.auth = val;
+        IBMQ_API.user = val.userId;
+        IBMQ_API.token = val.id;
+        IBMQ_API.auth = val;
         resolve(val);
       }).catch(val => {
         reject(val);
@@ -22,10 +30,10 @@ var ibmq_api = {
     path = path || "";
     params = params || {};
     if (auth) params['access_token'] = this.token;
-    var _url = ibmq_api.url + path + this.serialize(params);
+    var _url = IBMQ_API.url + path + this.serialize(params);
     console.log("getting " + _url);
     return new this.promise((resolve, reject) => {
-      ibmq_api.request.get(_url, (error, response, body) => {
+      IBMQ_API.request.get(_url, (error, response, body) => {
         if (!error && (response.statusCode >= 200 && response.statusCode < 400)) {
           console.log('success ' + response.statusCode);
           resolve(JSON.parse(body));
@@ -41,10 +49,10 @@ var ibmq_api = {
     path = path || "";
     params = params || {};
     if (auth) params['access_token'] = this.token;
-    var _url = ibmq_api.url + path + this.serialize(params);
+    var _url = IBMQ_API.url + path + this.serialize(params);
     console.log("posting " + _url);
     return new this.promise((resolve, reject) => {
-      ibmq_api.request.post(_url, {form: _form}, (error, response, body) => {
+      IBMQ_API.request.post(_url, {form: _form}, (error, response, body) => {
         if (!error && (response.statusCode >= 200 && response.statusCode < 400)) {
           console.log('success ' + response.statusCode);
           resolve(JSON.parse(body));
@@ -56,8 +64,17 @@ var ibmq_api = {
     });
   },
 
+  init: function(api_token) {
+    this.apiToken = api_token;
+  },
+
+  setAuth: function(user, token) {
+    this.user = user;
+    this.token = token;
+  },
+
   getAuth: function() {
-    return ibmq_api.auth;
+    return IBMQ_API.auth;
   },
 
   getToken: function(api_token) {
@@ -76,35 +93,55 @@ var ibmq_api = {
     return this.get('/Codes/' + id + '/executions');
   },
 
-  getCodeImage: function(id) {
+  getExportedImage: function(id) {
     return this.get('/Codes/' + id + '/export/png/url');
   },
 
-  getLastCodes: function(includeExecutions = true) {
+  getLatestCodes: function(includeExecutions = true) {
     return this.get('/users/' + this.user + '/codes/latest', {'includeExecutions':includeExecutions});
   },
 
-  run: function(code, version, device, shots, name, seed) {
+  getJob: function(id) {
+    return this.get('/Jobs/' + id);
+  },
+
+  getDeviceStatus: function(id) {
+    return this.get('/Status/queue', {'device' : id}, false);
+  },
+
+  getDeviceParams: function(id) {
+    return this.get('/Backends/' + id + '/parameters');
+  },
+
+  getDeviceCalibration: function(id) {
+    return this.get('/Backends/' + id + '/calibration');
+  },
+
+  getDevices: function() {
+    return this.get('/Backends');
+  },
+
+  run: function(code, lang, device, shots, name, seed) {
     var params = {
-      'shots': shots || 1,
-      'seed': seed,
-      'deviceRunType': device || 'simulator'
+      'shots': shots || this.defaults.shots,
+      'seed': seed || this.defaults.seed,
+      'deviceRunType': device || this.defaults.device
     }, form = {
       'qasm': code,
-      'codeType': version || 'QASM2',
-      'name': name || ('Experiment' + new Date())
+      'codeType': lang || this.defaults.lang,
+      'name': name || (this.defaults.name + new Date())
     };
     return this.post('/codes/execute', params, form);
   },
 
-  job: function(codes, version, device, name, shots, seed, max) {
+  postJob: function(codes, lang, device, name, shots, seed, max) {
     var params = {}, form = {
       'qasms': codes,
-      'seed': seed,
-      'shots': shots || 1,
-      'codeType': version || 'QASM2',
-      'name': name || ('Job' + new Date()),
-      'backends': { 'name': device || 'simulator' }
+      'seed': seed || this.defaults.seed,
+      'shots': shots || this.defaults.shots,
+      'codeType': lang || this.defaults.lang,
+      'name': name || (this.defaults.jobName + new Date()),
+      'backends': { 'name': device || this.defaults.device }
     };
     return this.post('/Jobs', params, form);
   },
@@ -118,25 +155,42 @@ var ibmq_api = {
 var token = '8f2e03f0e2c74706b7af537b88433984f9b1608e469758442cfd7c3388141f4480ef5bbd229d17879341feb80a4e0b3dcc341e7c028e4490864815ca79ab586a';
 var qasm = 'include "qelib1.inc";\nqreg q[5];\ncreg c[5];\nx q[0];\nid q[1];\nid q[2];\nh q[0];\nh q[1];\nh q[2];\nbarrier q[0],q[1],q[2],q[3],q[4];\ncx q[0],q[1];\ncx q[1],q[2];\ncx q[0],q[2];\nbarrier q[0],q[1],q[2],q[3],q[4];\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];\nmeasure q[2] -> c[2];';
 
-ibmq_api.log(token).then(val => {
-  
-  ibmq_api.run(qasm, 'QASM2', 'simulator').then(val => {
-    console.log('did RUN!');
-    console.log(JSON.stringify(val));
-    ibmq_api.getLastCodes().then(val => {
-      console.log('getLastCodes ' + JSON.stringify(val));
-      /*ibmq_api.getExecutions('0').then(val => {
-        console.log('then! ' + val);
+
+//LOGIN TO IBMQ
+IBMQ_API.log(token).then(val => {
+  //GET CURRENT DEVICES
+  IBMQ_API.getDevices().then(val => {
+    console.log('getDevices success ' + JSON.stringify(val));
+    val.forEach(item => console.log(item.name + ' ' + item.status + ' ' + item.id));
+    var deviceId = val[0].id;
+    IBMQ_API.getDeviceStatus(deviceId).then(val => {
+      console.log('getDeviceStatus success ' + JSON.stringify(val));
+      IBMQ_API.getDeviceParams(deviceId).then(val => {
+        console.log('getDeviceParams success ' + JSON.stringify(val));
+        IBMQ_API.getDeviceCalibration(deviceId).then(val => {
+          console.log('getDeviceCalibration success ' + JSON.stringify(val));
+        }).catch(val => {
+          console.log('getDeviceCalibration error ' + val);
+        });
       }).catch(val => {
-        console.log('catch! ' + val);
-      });*/
+        console.log('getDeviceParams error ' + val);
+      });
     }).catch(val => {
-      console.log('getLastCodes ERR!' + val);
+      console.log('getDeviceStatus error ' + val);
     });
   }).catch(val => {
-    console.log('didnt run :(');
-    console.log(val);
+    console.log('getDevices error ' + val);
   });
+  /*IBMQ_API.run(qasm, 'QASM2', 'simulator').then(val => {
+    console.log('run success' + JSON.stringify(val));
+    IBMQ_API.getLatestCodes().then(val => {
+      console.log('getLatestCodes success' + JSON.stringify(val));
+    }).catch(val => {
+      console.log('getLatestCodes error' + val);
+    });
+  }).catch(val => {
+    console.log('run error ' + val);
+  });*/
 }).catch(val => {
   console.log('Failed Authentication' + val);
 });
