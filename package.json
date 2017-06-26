@@ -1,0 +1,31 @@
+{
+  "name": "ibmq_api",
+  "version": "0.8.0",
+  "description": "API Client for IBM Quantum Experience",
+  "main": "index.js",
+  "dependencies": {
+    "promise": "^8.0.0",
+    "request": "^2.81.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lsjcp/ibmq_api_node.git"
+  },
+  "keywords": [
+    "node",
+    "quantum",
+    "ibm",
+    "qbit",
+    "api"
+  ],
+  "author": "Luis J Camargo",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/lsjcp/ibmq_api_node/issues"
+  },
+  "homepage": "https://github.com/lsjcp/ibmq_api_node#readme"
+}
