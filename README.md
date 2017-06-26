@@ -1,4 +1,4 @@
-# QuantumJS
+# IBMQ API for node.js
 [![GitHub version](https://badge.fury.io/gh/lsjcp%2Fquantumjs.svg)](https://badge.fury.io/gh/lsjcp%2Fquantumjs)
 
 This is an open source API Client for node.js for **IBM Quantum Experience** that allows the execution of **QASM** into a Quantum Computer or Simulator.
