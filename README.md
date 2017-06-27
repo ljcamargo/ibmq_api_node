@@ -42,7 +42,7 @@ All API methods return a Promise object.
 **Run QASM Code**
 ```javascript
 //YOUR QASM CODE
-var qasm = 'include "qelib1.inc";\nqreg q[5];\ncreg c[5];\nx q[0];
+var qasm = 'include "qelib1.inc";\nqreg q[5];\ncreg c[5];\nx q[0];';
 //DEVICE
 var device = 'simulator';
 api.run(qasm, 'QASM2', device).then(val => {
